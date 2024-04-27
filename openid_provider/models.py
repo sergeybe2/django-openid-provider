@@ -1,7 +1,10 @@
-# -*- coding: utf-8 -*-
 # vim: set ts=4 sw=4 : */
+import random
+import base64
 
-from django.utils.translation import ugettext_lazy as _
+from hashlib import sha1
+
+from django.utils.translation import gettext_lazy as _
 from django.db import models
 
 from openid_provider.conf import AUTH_USER_MODEL
@@ -18,19 +21,17 @@ class OpenID(models.Model):
         ordering = ['openid']
 
     def __unicode__(self):
-        return u"%s|%s" % (get_username(self.user), self.openid)
+        return "{}|{}".format(get_username(self.user), self.openid)
 
     def save(self, *args, **kwargs):
-        if self.openid in ['', u'', None]:
-            from hashlib import sha1
-            import random, base64
+        if self.openid in ['', '', None]:
             sha = sha1()
             sha.update(get_username(self.user).encode('utf-8'))
             sha.update(str(random.random()).encode('utf-8'))
             value = str(base64.b64encode(sha.digest()))
             value = value.replace('/', '').replace('+', '').replace('=', '').replace('\'', '')
             self.openid = value
-        super(OpenID, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
         if self.default:
             self.user.openid_set.exclude(pk=self.pk).update(default=False)
 

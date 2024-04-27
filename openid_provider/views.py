@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # some code from http://www.djangosnippets.org/snippets/310/ by simon
 # and from examples/djopenid from python-openid-2.2.4
 import urllib.parse
@@ -8,7 +7,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.http import HttpResponse, HttpResponseRedirect, QueryDict
 from django.shortcuts import render
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from django.utils.encoding import smart_str
 try:
@@ -18,13 +17,10 @@ except ImportError:
 
 from django.contrib.auth import REDIRECT_FIELD_NAME
 
-from openid.association import default_negotiator, encrypted_negotiator
+from openid.association import encrypted_negotiator
 from openid.consumer.discover import OPENID_IDP_2_0_TYPE, OPENID_2_0_TYPE
 from openid.extensions import sreg, ax
-from openid.fetchers import HTTPFetchingError
 from openid.server.server import Server, BROWSER_REQUEST_MODES
-from openid.server.trustroot import verifyReturnTo
-from openid.yadis.discover import DiscoveryFailure
 from openid.yadis.constants import YADIS_CONTENT_TYPE
 
 from openid_provider import conf
@@ -60,11 +56,11 @@ def openid_server(request):
             del request.session['OPENID_REQUEST']
         else:
             # not request, render info page:
-            data = {
-                'host': request.build_absolute_uri('/'),
-                'xrds_location': request.build_absolute_uri(
-                    reverse('openid-provider-xrds')),
-            }
+            # data = {
+            #     'host': request.build_absolute_uri('/'),
+            #     'xrds_location': request.build_absolute_uri(
+            #         reverse('openid-provider-xrds')),
+            # }
             # Return empty string
             return HttpResponse("", content_type="text/plain")
 
@@ -163,7 +159,7 @@ class SafeQueryDict(QueryDict):
     def urlencode(self, safe=None):
         output = []
         if safe:
-            encode = lambda k, v: '%s=%s' % ((urllib.parse.quote(k, safe), urllib.parse.quote(v, safe)))
+            encode = lambda k, v: '{}={}'.format(urllib.parse.quote(k, safe), urllib.parse.quote(v, safe))
         else:
             encode = lambda k, v: urllib.parse.urlencode({k: v})
         for k, list_ in self.lists():

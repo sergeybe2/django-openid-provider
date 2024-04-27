@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # vim: set ts=4 sw=4 fdm=indent : */
 # some code from http://www.djangosnippets.org/snippets/310/ by simon
 # and from examples/djopenid from python-openid-2.2.4
