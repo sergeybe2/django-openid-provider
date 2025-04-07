@@ -5,19 +5,23 @@ from openid_provider import conf
 from openid.extensions import ax, sreg
 
 from django.core.exceptions import ImproperlyConfigured
+
 try:
     from importlib import import_module
 except ImportError:
     from django.utils.importlib import import_module
 
+
 def import_module_attr(path):
     package, module = path.rsplit('.', 1)
     return getattr(import_module(package), module)
+
 
 def get_username(u):
     if hasattr(u, 'get_username'):
         return u.get_username()
     return u.username
+
 
 def get_default_sreg_data(request, orequest):
     return {
@@ -25,6 +29,7 @@ def get_default_sreg_data(request, orequest):
         'nickname': request.user.get_short_name(),
         'fullname': request.user.get_full_name(),
     }
+
 
 def get_default_ax_data(request, orequest):
     return {
@@ -35,6 +40,7 @@ def get_default_ax_data(request, orequest):
         'http://axschema.org/namePerson/last': request.user.last_name,
     }
 
+
 def add_sreg_data(request, orequest, oresponse):
     callback = get_sreg_callback()
     if callback is None or not callable(callback):
@@ -43,6 +49,7 @@ def add_sreg_data(request, orequest, oresponse):
     sreg_req = sreg.SRegRequest.fromOpenIDRequest(orequest)
     sreg_resp = sreg.SRegResponse.extractResponse(sreg_req, sreg_data)
     oresponse.addExtension(sreg_resp)
+
 
 def add_ax_data(request, orequest, oresponse):
     callback = get_ax_callback()
@@ -58,11 +65,13 @@ def add_ax_data(request, orequest, oresponse):
                 ax_resp.addValue(attr, value)
     oresponse.addExtension(ax_resp)
 
+
 def get_sreg_callback():
     try:
         return import_module_attr(conf.SREG_DATA_CALLBACK)
     except (ImportError, AttributeError):
         return None
+
 
 def get_ax_callback():
     try:
@@ -70,11 +79,12 @@ def get_ax_callback():
     except (ImportError, AttributeError):
         return None
 
+
 def get_store(request):
     try:
         store_class = import_module_attr(conf.STORE)
     except ImportError:
-        raise ImproperlyConfigured("OpenID store %r could not be imported" % conf.STORE)
+        raise ImproperlyConfigured('OpenID store %r could not be imported' % conf.STORE)
     # The FileOpenIDStore requires a path to save the user files.
     if conf.STORE == 'openid.store.filestore.FileOpenIDStore':
         return store_class(conf.FILESTORE_PATH)

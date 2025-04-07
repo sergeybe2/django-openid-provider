@@ -3,7 +3,6 @@ from django.conf import settings
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -12,10 +11,23 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='OpenID',
             fields=[
-                ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
+                (
+                    'id',
+                    models.AutoField(
+                        primary_key=True,
+                        verbose_name='ID',
+                        auto_created=True,
+                        serialize=False,
+                    ),
+                ),
                 ('openid', models.CharField(max_length=200, blank=True, unique=True)),
                 ('default', models.BooleanField(default=False)),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
+                (
+                    'user',
+                    models.ForeignKey(
+                        to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+                    ),
+                ),
             ],
             options={
                 'verbose_name_plural': 'OpenIDs',
@@ -26,9 +38,22 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TrustedRoot',
             fields=[
-                ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
+                (
+                    'id',
+                    models.AutoField(
+                        primary_key=True,
+                        verbose_name='ID',
+                        auto_created=True,
+                        serialize=False,
+                    ),
+                ),
                 ('trust_root', models.CharField(max_length=200)),
-                ('openid', models.ForeignKey(to='openid_provider.OpenID', on_delete=models.CASCADE)),
+                (
+                    'openid',
+                    models.ForeignKey(
+                        to='openid_provider.OpenID', on_delete=models.CASCADE
+                    ),
+                ),
             ],
         ),
     ]

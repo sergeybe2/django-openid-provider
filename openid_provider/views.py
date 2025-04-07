@@ -1,6 +1,6 @@
 # some code from http://www.djangosnippets.org/snippets/310/ by simon
 # and from examples/djopenid from python-openid-2.2.4
-import urllib.parse
+from urllib.parse import urlunparse, urlparse, quote, urlencode
 import logging
 
 from django.conf import settings
@@ -10,6 +10,7 @@ from django.shortcuts import render
 from django.utils.translation import gettext as _
 
 from django.utils.encoding import smart_str
+
 try:
     from django.views.decorators.csrf import csrf_exempt
 except ImportError:
@@ -28,16 +29,18 @@ from openid_provider.utils import add_sreg_data, add_ax_data, get_store
 
 logger = logging.getLogger(__name__)
 
+
 @csrf_exempt
 def openid_server(request):
     """
     This view is the actual OpenID server - running at the URL pointed to by
     the <link rel="openid.server"> tag.
     """
-    logger.debug('server request %s: %s',
-                 request.method, request.POST or request.GET)
-    server = Server(get_store(request),
-        op_endpoint=request.build_absolute_uri(reverse('openid-provider-root')))
+    logger.debug('server request %s: %s', request.method, request.POST or request.GET)
+    server = Server(
+        get_store(request),
+        op_endpoint=request.build_absolute_uri(reverse('openid-provider-root')),
+    )
 
     if not request.is_secure():
         # if request is not secure allow only encrypted association sessions
@@ -62,19 +65,19 @@ def openid_server(request):
             #         reverse('openid-provider-xrds')),
             # }
             # Return empty string
-            return HttpResponse("", content_type="text/plain")
+            return HttpResponse('', content_type='text/plain')
 
     if orequest.mode in BROWSER_REQUEST_MODES:
         if not request.user.is_authenticated:
             logger.debug('no local authentication, sending landing page')
             return landing_page(request, orequest)
 
-        openid = openid_is_authorized(request, orequest.identity,
-                                      orequest.trust_root)
+        openid = openid_is_authorized(request, orequest.identity, orequest.trust_root)
 
         if openid is not None:
             id_url = request.build_absolute_uri(
-                reverse('openid-provider-identity', args=[openid.openid]))
+                reverse('openid-provider-identity', args=[openid.openid])
+            )
             oresponse = orequest.answer(True, identity=id_url)
             logger.debug('orequest.answer(True, identity="%s")', id_url)
         elif orequest.immediate:
@@ -93,9 +96,13 @@ def openid_server(request):
     # Convert a webresponse from the OpenID library in to a Django HttpResponse
     webresponse = server.encodeResponse(oresponse)
     if webresponse.code == 200 and orequest.mode in BROWSER_REQUEST_MODES:
-        response = render(request, 'openid_provider/response.html', {
-            'body': webresponse.body,
-        })
+        response = render(
+            request,
+            'openid_provider/response.html',
+            {
+                'body': webresponse.body,
+            },
+        )
         logger.debug('rendering browser response')
     else:
         response = HttpResponse(webresponse.body)
@@ -105,6 +112,7 @@ def openid_server(request):
         logger.debug('rendering raw response')
     return response
 
+
 def openid_xrds(request, identity=False, id=None):
     if identity:
         types = [OPENID_2_0_TYPE]
@@ -113,11 +121,17 @@ def openid_xrds(request, identity=False, id=None):
         if conf.AX_EXTENSION:
             types.append(ax.AXMessage.ns_uri)
     endpoints = [request.build_absolute_uri(reverse('openid-provider-root'))]
-    return render(request, 'openid_provider/xrds.xml', {
-        'host': request.build_absolute_uri('/'),
-        'types': types,
-        'endpoints': endpoints,
-    }, content_type=YADIS_CONTENT_TYPE)
+    return render(
+        request,
+        'openid_provider/xrds.xml',
+        {
+            'host': request.build_absolute_uri('/'),
+            'types': types,
+            'endpoints': endpoints,
+        },
+        content_type=YADIS_CONTENT_TYPE,
+    )
+
 
 def openid_decide(request):
     """
@@ -133,10 +147,12 @@ def openid_decide(request):
 
     openid = openid_get_identity(request, orequest.identity) if orequest else None
     if openid is None:
-        return error_page(request,
-            "A website tried to authenticate you using url %s, "
-            "but this url is not associated with your account." %
-            (orequest.identity if orequest else '<none>'))
+        return error_page(
+            request,
+            'A website tried to authenticate you using url %s, '
+            'but this url is not associated with your account.'
+            % (orequest.identity if orequest else '<none>'),
+        )
 
     # We unconditionally allow access without prompting the user
     openid.trustedroot_set.create(trust_root=orequest.trust_root)
@@ -144,10 +160,15 @@ def openid_decide(request):
 
 
 def error_page(request, msg):
-    return render(request, 'openid_provider/error.html', {
-        'title': _('Error'),
-        'msg': msg,
-    })
+    return render(
+        request,
+        'openid_provider/error.html',
+        {
+            'title': _('Error'),
+            'msg': msg,
+        },
+    )
+
 
 class SafeQueryDict(QueryDict):
     """
@@ -156,20 +177,27 @@ class SafeQueryDict(QueryDict):
 
     Backported from Django 1.3
     """
+
     def urlencode(self, safe=None):
         output = []
         if safe:
-            encode = lambda k, v: '{}={}'.format(urllib.parse.quote(k, safe), urllib.parse.quote(v, safe))
+
+            def encode(k, v):
+                return '{}={}'.format(quote(k, safe), quote(v, safe))
         else:
-            encode = lambda k, v: urllib.parse.urlencode({k: v})
+
+            def encode(k, v):
+                return urlencode({k: v})
+
         for k, list_ in self.lists():
             k = smart_str(k, self.encoding)
-            output.extend([encode(k, smart_str(v, self.encoding))
-                           for v in list_])
+            output.extend([encode(k, smart_str(v, self.encoding)) for v in list_])
         return '&'.join(output)
 
-def landing_page(request, orequest, login_url=None,
-                 redirect_field_name=REDIRECT_FIELD_NAME):
+
+def landing_page(
+    request, orequest, login_url=None, redirect_field_name=REDIRECT_FIELD_NAME
+):
     """
     The page shown when the user attempts to sign in somewhere using OpenID
     but is not authenticated with the site. For idproxy.net, a message telling
@@ -179,12 +207,13 @@ def landing_page(request, orequest, login_url=None,
     if not login_url:
         login_url = settings.LOGIN_URL
     path = request.get_full_path()
-    login_url_parts = list(urllib.parse.urlparse(login_url))
+    login_url_parts = list(urlparse(login_url))
     if redirect_field_name:
         querystring = SafeQueryDict(login_url_parts[4], mutable=True)
         querystring[redirect_field_name] = path
         login_url_parts[4] = querystring.urlencode(safe='/')
-    return HttpResponseRedirect(urllib.parse.urlunparse(login_url_parts))
+    return HttpResponseRedirect(urlunparse(login_url_parts))
+
 
 def openid_is_authorized(request, identity_url, trust_root):
     """
@@ -203,6 +232,7 @@ def openid_is_authorized(request, identity_url, trust_root):
 
     return openid
 
+
 def openid_get_identity(request, identity_url):
     """
     Select openid based on claim (identity_url).
@@ -213,7 +243,8 @@ def openid_get_identity(request, identity_url):
     """
     for openid in request.user.openid_set.iterator():
         if identity_url == request.build_absolute_uri(
-                reverse('openid-provider-identity', args=[openid.openid])):
+            reverse('openid-provider-identity', args=[openid.openid])
+        ):
             return openid
     if identity_url == 'http://specs.openid.net/auth/2.0/identifier_select':
         # no claim was made, choose user default openid:
